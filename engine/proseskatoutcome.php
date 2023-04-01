@@ -1,44 +1,61 @@
 <?php
-
 include 'database.php';
 
-// function create
-if (isset($_POST['namakategorioutcome'])) {
-  $namakategorioutcome = $_POST['namakategorioutcome'];
+function showMessage($message, $location) {
+  echo "<script>alert('$message');window.location.href='$location';</script>";
+}
 
-  // cek apakah nama kategori sudah ada di database
-  $query = "SELECT * FROM catoutcome WHERE nama='$namakategorioutcome'";
-  $result = mysqli_query($conn, $query);
-
+function createCategory($conn, $categoryName) {
+  $query = "SELECT * FROM catoutcome WHERE nama = ?";
+  $stmt = mysqli_prepare($conn, $query);
+  mysqli_stmt_bind_param($stmt, "s", $categoryName);
+  mysqli_stmt_execute($stmt);
+  $result = mysqli_stmt_get_result($stmt);
+  
   if (mysqli_num_rows($result) > 0) {
-    // jika sudah ada, kembali ke halaman kategori-outcome.php dengan pesan error
-    echo '<script>alert("Nama kategori sudah ada");window.location.href="../kategori-outcome.php";</script>';
+    showMessage("Nama kategori sudah ada", "../kategori-outcome.php");
   } else {
-    // jika belum ada, simpan data ke database
-    $query = "INSERT INTO catoutcome (nama) VALUES ('$namakategorioutcome')";
-    if (mysqli_query($conn, $query)) {
-      // jika berhasil, kembali ke halaman kategori-outcome.php dengan pesan sukses
-      echo '<script>alert("Kategori berhasil dibuat");window.location.href="../kategori-outcome.php";</script>';
+    $query = "INSERT INTO catoutcome (nama) VALUES (?)";
+    $stmt = mysqli_prepare($conn, $query);
+    mysqli_stmt_bind_param($stmt, "s", $categoryName);
+    if (mysqli_stmt_execute($stmt)) {
+      showMessage("Kategori berhasil dibuat", "../kategori-outcome.php");
     } else {
-      // jika gagal, kembali ke halaman kategori-outcome.php dengan pesan error
-      echo '<script>alert("Gagal menyimpan kategori");window.location.href="../kategori-outcome.php";</script>';
+      showMessage("Gagal menyimpan kategori", "../kategori-outcome.php");
     }
   }
 }
 
-// function delete
-if (isset($_GET['id'])) {
-  $id = $_GET['id'];
-
-  // hapus data dari database
-  $query = "DELETE FROM catoutcome WHERE id=$id";
-  if (mysqli_query($conn, $query)) {
-    // jika berhasil, kembali ke halaman kategori-outcome.php dengan pesan sukses
-    echo '<script>alert("Kategori berhasil dihapus");window.location.href="../kategori-outcome.php";</script>';
+function deleteCategory($conn, $id) {
+  $query = "DELETE FROM catoutcome WHERE id = ?";
+  $stmt = mysqli_prepare($conn, $query);
+  mysqli_stmt_bind_param($stmt, "i", $id);
+  if (mysqli_stmt_execute($stmt)) {
+    showMessage("Kategori berhasil dihapus", "../kategori-outcome.php");
   } else {
-    // jika gagal, kembali ke halaman kategori-outcome.php dengan pesan error
-    echo '<script>alert("Gagal menghapus kategori");window.location.href="../kategori-outcome.php";</script>';
+    showMessage("Gagal menghapus kategori", "../kategori-outcome.php");
   }
 }
 
+if (isset($_POST['namakategorioutcome'])) {
+  $categoryName = $_POST['namakategorioutcome'];
+
+  // Validasi input
+  if (empty($categoryName)) {
+    showMessage("Nama kategori tidak boleh kosong", "../kategori-outcome.php");
+  } else {
+    createCategory($conn, $categoryName);
+  }
+}
+
+if (isset($_GET['id'])) {
+  $id = $_GET['id'];
+
+  // Validasi input
+  if (!is_numeric($id)) {
+    showMessage("ID kategori harus angka", "../kategori-outcome.php");
+  } else {
+    deleteCategory($conn, $id);
+  }
+}
 ?>

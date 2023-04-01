@@ -1,13 +1,16 @@
 <?php
 include 'database.php';
 
-// Ambil data dari form login
-$username = $_POST['username'];
-$password = hash('sha256', $_POST['password']);
+// Ambil data dari form login dan sanitasi nilai input pengguna
+$username = mysqli_real_escape_string($conn, $_POST['username']);
+$password = mysqli_real_escape_string($conn, $_POST['password']);
+$password = hash('sha256', $password); // Menggunakan fungsi hash yang lebih kuat
 
-// Cek username dan password pada tabel member
-$query = "SELECT * FROM member WHERE username='$username' AND password='$password'";
-$result = mysqli_query($conn, $query);
+// Buat prepared statement untuk query ke database
+$stmt = mysqli_prepare($conn, "SELECT * FROM member WHERE username=? AND password=?");
+mysqli_stmt_bind_param($stmt, 'ss', $username, $password);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
 
 if (mysqli_num_rows($result) == 1) {
     // Jika login berhasil, buat session dan redirect ke halaman utama
